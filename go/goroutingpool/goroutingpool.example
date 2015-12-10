@@ -1,0 +1,137 @@
+type GoroutinePool struct {
+ 2     Queue  chan func() error
+ 3     Number int
+ 4     Total  int
+ 5 
+ 6     result         chan error
+ 7     finishCallback func()
+ 8 }
+ 9 
+10 // 初始化
+11 func (self *GoroutinePool) Init(number int, total int) {
+12     self.Queue = make(chan func() error, total)
+13     self.Number = number
+14     self.Total = total
+15     self.result = make(chan error, total)
+16 }
+17 
+18 // 开门接客
+19 func (self *GoroutinePool) Start() {
+20     // 开启Number个goroutine
+21     for i := 0; i < self.Number; i++ {
+22         go func() {
+23             for {
+24                 task, ok := <-self.Queue
+25                 if !ok {
+26                     break
+27                 }
+28 
+29                 err := task()
+30                 self.result <- err
+31             }
+32         }()
+33     }
+34 
+35     // 获得每个work的执行结果
+36     for j := 0; j < self.Total; j++ {
+37         res, ok := <-self.result
+38         if !ok {
+39             break
+40         }
+41 
+42         if res != nil {
+43             fmt.Println(res)
+44         }
+45     }
+46 
+47     // 所有任务都执行完成，回调函数
+48     if self.finishCallback != nil {
+49         self.finishCallback()
+50     }
+51 }
+52 
+53 // 关门送客
+54 func (self *GoroutinePool) Stop() {
+55     close(self.Queue)
+56     close(self.result)
+57 }
+58 
+59 // 添加任务
+60 func (self *GoroutinePool) AddTask(task func() error) {
+61     self.Queue <- task
+62 }
+63 
+64 // 设置结束回调
+65 func (self *GoroutinePool) SetFinishCallback(callback func()) {
+66     self.finishCallback = callback
+67 }
+
+
+
+
+1 func Download_test() {
+ 2     urls := []string{
+ 3         "http://dlsw.baidu.com/sw-search-sp/soft/44/17448/Baidusd_Setup_4.2.0.7666.1436769697.exe",
+ 4         "http://dlsw.baidu.com/sw-search-sp/soft/3a/12350/QQ_V7.4.15197.0_setup.1436951158.exe",
+ 5         "http://dlsw.baidu.com/sw-search-sp/soft/9d/14744/ChromeStandalone_V43.0.2357.134_Setup.1436927123.exe",
+ 6         "http://dlsw.baidu.com/sw-search-sp/soft/6f/15752/iTunes_V12.2.1.16_Setup.1436855012.exe",
+ 7         "http://dlsw.baidu.com/sw-search-sp/soft/70/17456/BaiduAn_Setup_5.0.0.6747.1435912002.exe",
+ 8         "http://dlsw.baidu.com/sw-search-sp/soft/40/12856/QIYImedia_1_06_v4.0.0.32.1437470004.exe",
+ 9         "http://dlsw.baidu.com/sw-search-sp/soft/42/37473/BaiduSoftMgr_Setup_7.0.0.1274.1436770136.exe",
+10         "http://dlsw.baidu.com/sw-search-sp/soft/49/16988/YoudaoNote_V4.1.0.300_setup.1429669613.exe",
+11         "http://dlsw.baidu.com/sw-search-sp/soft/55/11339/bdbrowserSetup-7.6.100.2089-1212_11000003.1437029629.exe",
+12         "http://dlsw.baidu.com/sw-search-sp/soft/53/21734/91zhushoupc_Windows_V5.7.0.1633.1436844901.exe",
+13     }
+14 
+15     pool := new(GoroutinePool)
+16     pool.Init(3, len(urls))
+17 
+18     for i := range urls {
+19         url := urls[i]
+20         pool.AddTask(func() error {
+21             return download(url)
+22         })
+23     }
+24 
+25     isFinish := false
+26 
+27     pool.SetFinishCallback(func() {
+28         func(isFinish *bool) {
+29             *isFinish = true
+30         }(&isFinish)
+31     })
+32 
+33     pool.Start()
+34 
+35     for !isFinish {
+36         time.Sleep(time.Millisecond * 100)
+37     }
+38 
+39     pool.Stop()
+40     fmt.Println("所有操作已完成！")
+41 }
+42 
+43 func download(url string) error {
+44     fmt.Println("开始下载... ", url)
+45 
+46     sp := strings.Split(url, "/")
+47     filename := sp[len(sp)-1]
+48 
+49     file, err := os.Create("/Users/staff/Documents/Red_Test/AAAA/" + filename)
+50     if err != nil {
+51         return err
+52     }
+53 
+54     res, err := http.Get(url)
+55     if err != nil {
+56         return err
+57     }
+58 
+59     length, err := io.Copy(file, res.Body)
+60     if err != nil {
+61         return err
+62     }
+63 
+64     fmt.Println("## 下载完成！ ", url, " 文件长度：", length)
+65     return nil
+66 }
