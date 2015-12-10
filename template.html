@@ -1,0 +1,45 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=gb2312" />
+    <title>status</title>
+    </head> 
+    <body style="size:12px">
+    {% for host in content %}
+    <table width="629" border="1" align="center">
+      <tr align="center">
+          <td width="245">{{ host }}</td>
+          {% if status.get(host).get('up') %}
+          <td width="226" style="color:#00CC66">up {{ status.get(host).get('up') }} </td>
+          {% else %}
+          <td width="226" style="color:#00CC66">up 0</td>
+          {% endif %}
+          {% if status.get(host).get('down') %}
+          <td width="136" style="color:#FF0000">down {{ status.get(host).get('down') }}</td>
+          {% else %}
+          <td width="136" style="color:#FF0000">down 0</td>
+          {% endif %}
+      </tr>
+      {% for h in content.get(host) %}
+      <tr align="center">
+          {% if h.status == "down" %}
+      <td bgcolor="#D8D8D8" style="color:#FF0000">{{ h.osd_id }}</td>
+      {% else %}
+      <td>{{ h.osd_id }}</td>
+      {% endif %}
+          {% if h.status == "down" %}
+          <td bgcolor="#D8D8D8" style="color:#FF0000">{{ h.status }}</td>
+          {% else %}
+          <td>{{ h.status }}</td>
+          {% endif %}
+          {% if h.status == "down" %}
+          <td bgcolor="#D8D8D8" style="color:#FF0000">{{ h.usable }}</td>
+          {% else %}
+          <td>{{ h.usable }}</td>
+          {% endif %}
+      </tr>
+      {% endfor %}
+    </table>
+    {% endfor %}
+    </body>
+    </html>
