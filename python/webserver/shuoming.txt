@@ -1,2 +1,2 @@
 一个server端，展示了父进程不关闭子进程的client socket或者子进程不关闭父进程的listen socket的后果，原文参考：http://python.jobbole.com/81820/
-一个客户端，多并发请求服务端
+一个客户端，多并发请求服务端 python client3.py --max-clients=300
